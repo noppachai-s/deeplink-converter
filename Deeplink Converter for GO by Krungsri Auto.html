@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deeplink Converter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', 'Sarabun', sans-serif;
+            background-color: #f4f6f8;
+        }
+        /* Custom scrollbar styling for textareas */
+        textarea::-webkit-scrollbar {
+            width: 8px;
+        }
+        textarea::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 8px;
+        }
+        textarea::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 8px;
+        }
+        textarea::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 sm:p-6 text-slate-800">
+
+    <div class="w-full max-w-xl bg-white rounded-3xl shadow-xl shadow-slate-200/60 p-6 sm:p-10 border border-slate-100 relative">
+        
+        <!-- Header -->
+        <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight pb-6 border-b border-slate-100 mb-8">
+            Deeplink Converter
+        </h1>
+
+        <!-- Content Area -->
+        <div class="space-y-6">
+
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <label for="inputUrls" class="block text-xs font-bold tracking-wider text-slate-500">
+                        Input URLs (One Per Line)
+                    </label>
+                    <button 
+                        type="button" 
+                        onclick="loadExampleData()"
+                        class="text-xs font-semibold text-amber-600 hover:text-amber-700 bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded-full transition-all flex items-center gap-1 active:scale-95"
+                        title="Click to insert sample URL for quick testing"
+                    >
+                        <span>⚡</span> Try Example
+                    </button>
+                </div>
+                <div class="relative">
+                    <textarea 
+                        id="inputUrls" 
+                        rows="4" 
+                        placeholder="Enter URLs http://app.krungsriauto.com here..."
+                        class="w-full p-4 rounded-2xl bg-white border-2 border-amber-400 focus:border-amber-400 focus:ring-4 focus:ring-amber-100 outline-none transition-all font-mono text-sm text-slate-700 resize-y"
+                    ></textarea>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 sm:gap-4">
+                <button 
+                    id="convertBtn" 
+                    onclick="convertUrls()"
+                    class="w-full py-3.5 px-4 bg-[#FFCD00] hover:bg-[#f0c100] active:scale-[0.98] text-slate-900 font-extrabold rounded-2xl transition-all shadow-sm flex items-center justify-center text-base"
+                >
+                    Convert
+                </button>
+                <button 
+                    id="clearBtn" 
+                    onclick="clearAll()"
+                    class="w-full py-3.5 px-4 bg-[#E8EEF5] hover:bg-[#dbe4f0] active:scale-[0.98] text-slate-700 font-bold rounded-2xl transition-all flex items-center justify-center text-base"
+                >
+                    Clear
+                </button>
+            </div>
+
+            <div>
+                <label for="outputUrls" class="block text-xs font-bold tracking-wider text-slate-500 mb-2">
+                    Converted Deeplinks
+                </label>
+                <textarea 
+                    id="outputUrls" 
+                    rows="4" 
+                    readonly 
+                    placeholder="Results will appear here..."
+                    class="w-full p-4 rounded-2xl bg-[#f0f4f8] border border-transparent font-mono text-sm text-slate-800 outline-none resize-y"
+                ></textarea>
+            </div>
+
+            <!-- Copy Button -->
+            <button 
+                id="copyBtn" 
+                onclick="copyToClipboard()"
+                class="w-full py-4 px-4 bg-[#1E293B] hover:bg-[#0f172a] active:scale-[0.98] text-white font-bold rounded-2xl transition-all shadow-md flex items-center justify-center gap-2 text-base"
+            >
+                <span id="copyText">Copy Result</span>
+            </button>
+
+            <!-- Footer -->
+            <div class="pt-4 border-t border-slate-100 text-center">
+                <p class="text-xs font-medium text-slate-400">
+                    Design by Noppachai.n
+                </p>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-emerald-600 text-white px-5 py-2.5 rounded-full shadow-lg font-medium text-sm transition-all duration-300 opacity-0 pointer-events-none translate-y-2 flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+        <span id="toastMessage">Copied to clipboard!</span>
+    </div>
+
+    <script>
+        /**
+         * Fills input textarea with exactly ONE sample URL
+         */
+        function loadExampleData() {
+            const exampleData = "http://app.krungsriauto.com/superrouter/?product=home";
+
+            const inputArea = document.getElementById('inputUrls');
+            inputArea.value = exampleData;
+            inputArea.focus();
+
+            // Automatically trigger conversion
+            convertUrls();
+        }
+
+        /**
+         * Converts input URLs to Deeplinks
+         */
+        function convertUrls() {
+            const inputArea = document.getElementById('inputUrls');
+            const outputArea = document.getElementById('outputUrls');
+            
+            const rawText = inputArea.value;
+            if (!rawText.trim()) {
+                outputArea.value = '';
+                return;
+            }
+
+            // Split into lines
+            const lines = rawText.split('\n');
+
+            const convertedLines = lines.map(line => {
+                let trimmed = line.trim();
+                if (!trimmed) return '';
+
+                // Replace http:// or https:// app.krungsriauto.com/superrouter/? with goapp://go?
+                let converted = trimmed.replace(/^https?:\/\/app\.krungsriauto\.com\/superrouter\/\?/i, 'goapp://go?');
+
+                // Append &deeplink=true if converted and not already present
+                if (converted !== trimmed && !converted.includes('deeplink=true')) {
+                    converted += '&deeplink=true';
+                }
+
+                return converted;
+            });
+
+            outputArea.value = convertedLines.join('\n');
+        }
+
+        /**
+         * Clears both textareas
+         */
+        function clearAll() {
+            document.getElementById('inputUrls').value = '';
+            document.getElementById('outputUrls').value = '';
+            document.getElementById('inputUrls').focus();
+        }
+
+        /**
+         * Copies output content to clipboard
+         */
+        function copyToClipboard() {
+            const outputArea = document.getElementById('outputUrls');
+            const textToCopy = outputArea.value;
+
+            if (!textToCopy.trim()) {
+                showToast("Nothing to copy!", true);
+                return;
+            }
+
+            // Select text in textarea
+            outputArea.select();
+            outputArea.setSelectionRange(0, 99999);
+
+            let success = false;
+            try {
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(textToCopy);
+                    success = true;
+                } else {
+                    success = document.execCommand('copy');
+                }
+            } catch (err) {
+                success = document.execCommand('copy');
+            }
+
+            if (success) {
+                showToast("Copied to clipboard!");
+            }
+        }
+
+        /**
+         * Displays a toast notification
+         */
+        function showToast(message = "Copied to clipboard!", isWarning = false) {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+
+            toastMessage.textContent = message;
+            if (isWarning) {
+                toast.classList.remove('bg-emerald-600');
+                toast.classList.add('bg-slate-700');
+            } else {
+                toast.classList.remove('bg-slate-700');
+                toast.classList.add('bg-emerald-600');
+            }
+
+            toast.classList.remove('opacity-0', 'translate-y-2', 'pointer-events-none');
+            toast.classList.add('opacity-100', 'translate-y-0');
+
+            setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0');
+                toast.classList.add('opacity-0', 'translate-y-2', 'pointer-events-none');
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
